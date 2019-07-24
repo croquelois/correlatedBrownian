@@ -4,8 +4,6 @@ how to use cholesky to correlate brownian movement
 
 check https://croquelois.github.io/correlatedBrownian/index.html
 
-be sure to use a postive-definite matrix, else it fail without warning
-
 I'm using:
 - cholesky implementation from https://github.com/lukapopijac/cholesky-tools
 - numericjs for matrix multiplication https://github.com/sloisel/numeric

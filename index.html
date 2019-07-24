@@ -19,12 +19,10 @@ function generateBrownianND(dim,T,n,corr){
   }
   let dt = T/n;
   let sdt = Math.sqrt(dt);
-  let decomp = corr && cholesky(corr);
-  
+  let decomp = cholesky(corr);
   while(n--){
     let w = xs.map(() => rnd());
-    if(decomp)
-      w = numeric.dot(decomp,w);
+    w = numeric.dot(decomp,w);
     xs = xs.map((x,i) => x+w[i]*sdt);
     ret.forEach((arr,i) => ret[i].push(xs[i]));
   }
@@ -90,10 +88,17 @@ window.onload = function() {
       corr[0][1] = corr[1][0] = parseFloat(d3.select("#corr01").property("value"));
       corr[0][2] = corr[2][0] = parseFloat(d3.select("#corr02").property("value"));
       corr[1][2] = corr[2][1] = parseFloat(d3.select("#corr12").property("value"));
-      let [m1,m2,m3] = generateBrownianND(3,T,100,corr);
-      svgPath1.transition().attr("d", line(m1));
-      svgPath2.transition().attr("d", line(m2));
-      svgPath3.transition().attr("d", line(m3));
+      
+      let determinant = numeric.det(corr);
+      if(determinant < 0){
+        d3.select("#error").text("the correlation matrix is not postive-definite; determinant is " + determinant.toFixed(2));
+      }else{
+        d3.select("#error").text("");
+        let [m1,m2,m3] = generateBrownianND(3,T,100,corr);
+        svgPath1.transition().attr("d", line(m1));
+        svgPath2.transition().attr("d", line(m2));
+        svgPath3.transition().attr("d", line(m3));
+      }
     }catch(err){
       console.log(err);
     }
@@ -114,6 +119,7 @@ window.onload = function() {
       <tr><td><input id="corr02" type="text" value="0"></td><td><input id="corr12" type="text" value="0"></td><td>1</td></tr>
     </table>
   </li>
-</td></tr></table>
+</td></tr>
+<tr><td><div id="error"></div></td></tr></table>
 </body>
 </html>
