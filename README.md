@@ -1,5 +1,8 @@
 # correlatedBrownian
+
 how to use cholesky to correlate brownian movement
+
+check https://croquelois.github.io/correlatedBrownian/index.html
 
 be sure to use a postive-definite matrix, else it fail without warning
 
