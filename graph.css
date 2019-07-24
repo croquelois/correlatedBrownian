@@ -1,0 +1,83 @@
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+.link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+.xLines, .yLines, .xZeroLine, .yZeroLine {
+  stroke: gray;
+  stroke-width: 1px;
+}
+.xZeroLine, .yZeroLine {
+  stroke-width: 2px;
+}
+.background {
+  fill: blue;
+  stroke: black;
+  stroke-width: 2;
+  fill-opacity: 0.1;
+}
+.curve, .curve-not-fit, .curveBlue, .curveRed, .curveGreen {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 2px;
+}
+.curve, .curveRed {
+  stroke: red;
+}
+.curve-not-fit, .curveBlue {
+  stroke: blue;
+}
+.curveGreen {
+  stroke: green;
+}
+.points, .points-focus {
+  fill: red;
+  stroke: red;
+}
+.points {
+  fill-opacity: 0.2;
+}
+.points-focus {
+  fill-opacity: 0.4;
+}
+.xTicks, .yTicks {
+  stroke: gray;
+  stroke-width: 1px;
+}
+.xLabels, .yLabels {
+  font-family: Arial;
+  font-size: 9pt;
+  fill: gray;
+
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.grid {
+  display: block;
+  list-style: none;
+  padding: 20px 0;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+
+.grid li {
+  display: inline-block;
+}
+
+table input {
+  width: 25px;
+  background-color: yellow;
+}
+
+table tr td div.placeholder{
+  width: 25px;
+}

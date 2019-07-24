@@ -1,0 +1,119 @@
+<html>
+<head>
+<meta charset="utf-8">
+<link type="text/css" href="graph.css" rel="stylesheet" />
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="ext/cholesky.js"></script>
+<script src="ext/numeric.js"></script>
+
+<script>
+
+let rnd = d3.random.normal();
+  
+function generateBrownianND(dim,T,n,corr){
+  let ret = [];
+  let xs = [];
+  for(let i=0;i<dim;i++){
+    xs.push(0);
+    ret.push([0]);
+  }
+  let dt = T/n;
+  let sdt = Math.sqrt(dt);
+  let decomp = corr && cholesky(corr);
+  
+  while(n--){
+    let w = xs.map(() => rnd());
+    if(decomp)
+      w = numeric.dot(decomp,w);
+    xs = xs.map((x,i) => x+w[i]*sdt);
+    ret.forEach((arr,i) => ret[i].push(xs[i]));
+  }
+  return ret.map(arr => arr.map((b,i) => ({x:i*dt,y:b})));
+}
+
+window.onload = function() {  
+  let width = 960,
+      height = 500;
+  let color = d3.scale.category20();
+
+  function path2svgOpen(path,w,h){
+    let ret = "";
+    ret += "M " + path[0].x*w + " " + path[0].y*h + " ";
+    for(let i=1;i<path.length;i++)
+      ret += "L " + path[i].x*w + " " + path[i].y*h + " ";
+    return ret;
+  }
+  let svg = d3.select("#graph").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+  let T = 5;
+  let x = d3.scale.linear().domain([0,T]).range([0, width]),
+      y = d3.scale.linear().domain([-5,5]).range([height, 0]);    
+  let line = d3.svg.line().x(d => x(d.x)).y(d => y(d.y));
+  function drawHLine(y,col){
+    var svgLine = svg.append("path")
+      .style("fill", "none")
+      .style("stroke", col)
+      .style("stroke-width", "1px")
+      .style("stroke-linecap", "round")
+      .attr("class", "path");
+    svgLine.attr("d", line([{x:0,y:y},{x:T,y:y}]));
+  }  
+  function range(from,to,step){
+    let ret = [];
+    for(let i = from;i<to;i+=step)
+      ret.push(i)
+    ret.push(to);
+    return ret;
+  }
+  range(-5,5,0.25).forEach(d => drawHLine(d,"gray"));
+  range(-5,5,1).forEach(d => drawHLine(d,"black"));  
+  function createPath(color){
+    return svg.append("path")
+      .style("fill", "none")
+      .style("stroke", color)
+      .style("stroke-width", "2px")
+      .style("stroke-linecap", "round")
+      .attr("class", "path");  
+  }
+  let svgPath1 = createPath("green");
+  let svgPath2 = createPath("blue");
+  let svgPath3 = createPath("red");
+  function loop(){
+    let corr = [
+      [1,0.0,0.0],
+      [0.0,1,0.0],
+      [0.0,0.0,1]
+    ];
+    try {
+      corr[0][1] = corr[1][0] = parseFloat(d3.select("#corr01").property("value"));
+      corr[0][2] = corr[2][0] = parseFloat(d3.select("#corr02").property("value"));
+      corr[1][2] = corr[2][1] = parseFloat(d3.select("#corr12").property("value"));
+      let [m1,m2,m3] = generateBrownianND(3,T,100,corr);
+      svgPath1.transition().attr("d", line(m1));
+      svgPath2.transition().attr("d", line(m2));
+      svgPath3.transition().attr("d", line(m3));
+    }catch(err){
+      console.log(err);
+    }
+    setTimeout(loop,250);
+  }
+  loop();
+}
+
+</script>
+</head>
+<body>
+<table><tr><td>
+  <div id="graph" />
+</td><td>
+    <table border=1>
+      <tr><td>1</td><td><div class="placeholder"/></td><td><div class="placeholder"/></td></tr>
+      <tr><td><input id="corr01" type="text" value="0"></td><td>1</td><td><div class="placeholder"/></td></tr>
+      <tr><td><input id="corr02" type="text" value="0"></td><td><input id="corr12" type="text" value="0"></td><td>1</td></tr>
+    </table>
+  </li>
+</td></tr></table>
+</body>
+</html>
