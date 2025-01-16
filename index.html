@@ -5,7 +5,6 @@
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="ext/cholesky.js"></script>
 <script src="ext/numeric.js"></script>
-
 <script>
 
 let rnd = d3.random.normal();
@@ -19,14 +18,63 @@ function generateBrownianND(dim,T,n,corr){
   }
   let dt = T/n;
   let sdt = Math.sqrt(dt);
-  let decomp = cholesky(corr);
+  let det = numeric.det(corr);
+  document.getElementById("det").value = det.toFixed(2);
+  if(det <= 0)
+    throw new Error("the correlation is not def positive");
+  let decomp = corr && cholesky(corr);
   while(n--){
     let w = xs.map(() => rnd());
-    w = numeric.dot(decomp,w);
+    if(decomp)
+      w = numeric.dot(decomp,w);
     xs = xs.map((x,i) => x+w[i]*sdt);
     ret.forEach((arr,i) => ret[i].push(xs[i]));
   }
   return ret.map(arr => arr.map((b,i) => ({x:i*dt,y:b})));
+}
+
+const T = 5;
+let g_svg = null;
+let g_line = null;
+let g_svgPath1 = null;
+let g_svgPath2 = null;
+let g_svgPath3 = null;
+
+function createPath(color){
+  return g_svg.append("path")
+    .style("fill", "none")
+    .style("stroke", color)
+    .style("stroke-width", "2px")
+    .style("stroke-linecap", "round")
+    .attr("class", "path");  
+}
+
+function next(){
+  let corr = [
+    [1,0.0,0.0],
+    [0.0,1,0.0],
+    [0.0,0.0,1]
+  ];
+  try {
+    corr[0][1] = corr[1][0] = parseFloat(d3.select("#corr01").property("value"));
+    corr[0][2] = corr[2][0] = parseFloat(d3.select("#corr02").property("value"));
+    corr[1][2] = corr[2][1] = parseFloat(d3.select("#corr12").property("value"));
+    let [m1,m2,m3] = generateBrownianND(3,T,100,corr);
+    g_svgPath1.transition().attr("d", g_line(m1));
+    g_svgPath2.transition().attr("d", g_line(m2));
+    g_svgPath3.transition().attr("d", g_line(m3));
+  }catch(err){
+    console.log(err);
+  }
+}
+
+let run = false;
+function stop(){
+  run = false;
+}
+
+function start(){
+  run = true;
 }
 
 window.onload = function() {  
@@ -41,22 +89,21 @@ window.onload = function() {
       ret += "L " + path[i].x*w + " " + path[i].y*h + " ";
     return ret;
   }
-  let svg = d3.select("#graph").append("svg")
-      .attr("width", width)
-      .attr("height", height);
+  g_svg = d3.select("#graph").append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-  let T = 5;
   let x = d3.scale.linear().domain([0,T]).range([0, width]),
       y = d3.scale.linear().domain([-5,5]).range([height, 0]);    
-  let line = d3.svg.line().x(d => x(d.x)).y(d => y(d.y));
+  g_line = d3.svg.line().x(d => x(d.x)).y(d => y(d.y));
   function drawHLine(y,col){
-    var svgLine = svg.append("path")
+    var svgLine = g_svg.append("path")
       .style("fill", "none")
       .style("stroke", col)
       .style("stroke-width", "1px")
       .style("stroke-linecap", "round")
       .attr("class", "path");
-    svgLine.attr("d", line([{x:0,y:y},{x:T,y:y}]));
+    svgLine.attr("d", g_line([{x:0,y:y},{x:T,y:y}]));
   }  
   function range(from,to,step){
     let ret = [];
@@ -66,42 +113,12 @@ window.onload = function() {
     return ret;
   }
   range(-5,5,0.25).forEach(d => drawHLine(d,"gray"));
-  range(-5,5,1).forEach(d => drawHLine(d,"black"));  
-  function createPath(color){
-    return svg.append("path")
-      .style("fill", "none")
-      .style("stroke", color)
-      .style("stroke-width", "2px")
-      .style("stroke-linecap", "round")
-      .attr("class", "path");  
-  }
-  let svgPath1 = createPath("green");
-  let svgPath2 = createPath("blue");
-  let svgPath3 = createPath("red");
+  range(-5,5,1).forEach(d => drawHLine(d,"black"));
+  g_svgPath1 = createPath("green");
+  g_svgPath2 = createPath("blue");
+  g_svgPath3 = createPath("red");
   function loop(){
-    let corr = [
-      [1,0.0,0.0],
-      [0.0,1,0.0],
-      [0.0,0.0,1]
-    ];
-    try {
-      corr[0][1] = corr[1][0] = parseFloat(d3.select("#corr01").property("value"));
-      corr[0][2] = corr[2][0] = parseFloat(d3.select("#corr02").property("value"));
-      corr[1][2] = corr[2][1] = parseFloat(d3.select("#corr12").property("value"));
-      
-      let determinant = numeric.det(corr);
-      if(determinant < 0){
-        d3.select("#error").text("the correlation matrix is not postive-definite; determinant is " + determinant.toFixed(2));
-      }else{
-        d3.select("#error").text("");
-        let [m1,m2,m3] = generateBrownianND(3,T,100,corr);
-        svgPath1.transition().attr("d", line(m1));
-        svgPath2.transition().attr("d", line(m2));
-        svgPath3.transition().attr("d", line(m3));
-      }
-    }catch(err){
-      console.log(err);
-    }
+    if(run) next();
     setTimeout(loop,250);
   }
   loop();
@@ -113,13 +130,16 @@ window.onload = function() {
 <table><tr><td>
   <div id="graph" />
 </td><td>
-    <table border=1>
-      <tr><td>1</td><td><div class="placeholder"/></td><td><div class="placeholder"/></td></tr>
-      <tr><td><input id="corr01" type="text" value="0"></td><td>1</td><td><div class="placeholder"/></td></tr>
-      <tr><td><input id="corr02" type="text" value="0"></td><td><input id="corr12" type="text" value="0"></td><td>1</td></tr>
-    </table>
-  </li>
-</td></tr>
-<tr><td><div id="error"></div></td></tr></table>
+  <table border=1 class="correlationTable">
+    <tr><td>Green</td><td>1</td><td><div class="placeholder"/></td><td><div class="placeholder"/></td></tr>
+    <tr><td>Blue</td><td><input id="corr01" type="text" value="0"></td><td>1</td><td><div class="placeholder"/></td></tr>
+    <tr><td>Red</td><td><input id="corr02" type="text" value="0"></td><td><input id="corr12" type="text" value="0"></td><td>1</td></tr>
+  </table>
+  <button onclick="next()">Next</button>
+  <button onclick="stop()">Stop</button>
+  <button onclick="start()">Start</button>
+  Det: <input id="det" type="test" readonly value="">
+</td></tr></table>
 </body>
 </html>
+
